@@ -184,7 +184,7 @@ def model():
         error = errors.mean()
         print (acc)
         print (error)
-        
+
     #visualiseModel(accuracy, loss)
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ import torch
 import os
 import sys
 from matplotlib import pyplot
+from sklearn.preprocessing import LabenEncoder
 #from torchvision import transforms
 
 
@@ -52,7 +53,7 @@ class Dataset(torch.utils.data.Dataset):
             index = idx.tolist()
 
         if self.process:
-            x = np.array(self.processed_data.iloc[index][:13])
+            x = np.array(self.processed_data.iloc[index][:41])
             y = np.array(self.processed_data.iloc[index][-1])
             return torch.from_numpy(x), torch.from_numpy(y)
         else:
@@ -93,15 +94,14 @@ class Dataset(torch.utils.data.Dataset):
         data_to_process.insert(1, 'Seasons', new_seasons)
         data_to_process.insert(2, 'Holidays', new_holidays)
         data_to_process.insert(3, 'Functioning Day', new_func_days)
-        data_to_process.insert(13, 'Rented Bike Count', test)
 
         data_to_process.columns = ['Date', 'Seasons', 'Holidays', 'FuncDays',
                                     'Hour', 'Temp', 'WindSpeed', 'Humidity',
                                     'Visibility', 'DewPoint', 'SolarRad',
-                                    'Rainfall', 'Snowfall', 'Rented']
+                                    'Rainfall', 'Snowfall']#, 'Rented']
 
         numeric_attr = ['Temp', 'WindSpeed', 'Humidity', 'Visibility', 'DewPoint',
-                        'SolarRad', 'Rainfall', 'Snowfall', 'Rented']
+                        'SolarRad', 'Rainfall', 'Snowfall']#, 'Rented']
         for col in numeric_attr:
             data_to_process[col] = pd.to_numeric(data_to_process[col], errors='coerce')
 
@@ -114,8 +114,11 @@ class Dataset(torch.utils.data.Dataset):
 
         train_attr = data_to_process[numeric_attr]
 
-        train_attr = pd.get_dummies(data_to_process, columns=categorical_attr)
         train_attr.pop('Date')
+
+        train_attr.insert(40, 'Rented Bike Count', test)
+
+        print (train_attr)
 
         return train_attr
 
@@ -128,11 +131,11 @@ class Dataset(torch.utils.data.Dataset):
 def model():
     # Sequential Model
     model = torch.nn.Sequential(
-        torch.nn.Linear(13, 64), #input = 13, hidden = 100, output = 13
+        torch.nn.Linear(41, 256), #input = 13, hidden = 100, output = 13
         torch.nn.LeakyReLU(),
-        torch.nn.Linear(64, 32), #input = 13, hidden = 100, output = 13
+        torch.nn.Linear(256, 128), #input = 13, hidden = 100, output = 13
         torch.nn.LeakyReLU(),
-        torch.nn.Linear(32, 1) #input = 13, hidden = 1, output = 1
+        torch.nn.Linear(128, 1) #input = 13, hidden = 1, output = 1
     )
 
     # Hyperparam
