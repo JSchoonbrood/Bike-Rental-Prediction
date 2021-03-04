@@ -131,7 +131,11 @@ class Dataset(torch.utils.data.Dataset):
 def model():
     # Sequential Model
     model = torch.nn.Sequential(
+<<<<<<< HEAD
         torch.nn.Linear(41, 256), #input = 13, hidden = 100, output = 13
+=======
+        torch.nn.Linear(41, 64), #input = 13, hidden = 100, output = 13
+>>>>>>> a6f7abe60142fc235c47226626621ce417c5c764
         torch.nn.LeakyReLU(),
         torch.nn.Linear(256, 128), #input = 13, hidden = 100, output = 13
         torch.nn.LeakyReLU(),
