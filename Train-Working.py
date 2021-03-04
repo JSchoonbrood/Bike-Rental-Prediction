@@ -137,7 +137,7 @@ def model():
 
     # Hyperparam
     BATCH_SIZE = 64
-    EPOCH = 2
+    EPOCH = 10
 
     if sys.platform == "linux" or sys.platform == "linux2":
         current_dir = os.path.dirname(__file__)
@@ -182,12 +182,10 @@ def model():
         errors = (prediction - target) ** 2  # Squared error
         acc = (errors < threshold).float().mean()
         error = errors.mean()
-        accuracy.append(torch.Tensor.detach(acc).numpy()[0])
-        loss_list.append(torch.Tensor.detach(error).numpy()[0])
-        print (accuracy)
-        print (loss_list)
-
-    visualiseModel(accuracy, loss)
+        print (acc)
+        print (error)
+        
+    #visualiseModel(accuracy, loss)
 
 if __name__ == '__main__':
     model()

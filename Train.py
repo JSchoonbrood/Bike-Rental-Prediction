@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 import os
 import sys
-import matplotlib.pyplot as plt
+from matplotlib import pyplot
 #from torchvision import transforms
 
 
@@ -93,14 +93,15 @@ class Dataset(torch.utils.data.Dataset):
         data_to_process.insert(1, 'Seasons', new_seasons)
         data_to_process.insert(2, 'Holidays', new_holidays)
         data_to_process.insert(3, 'Functioning Day', new_func_days)
+        data_to_process.insert(13, 'Rented Bike Count', test)
 
         data_to_process.columns = ['Date', 'Seasons', 'Holidays', 'FuncDays',
                                     'Hour', 'Temp', 'WindSpeed', 'Humidity',
                                     'Visibility', 'DewPoint', 'SolarRad',
-                                    'Rainfall', 'Snowfall']#, 'Rented']
+                                    'Rainfall', 'Snowfall', 'Rented']
 
         numeric_attr = ['Temp', 'WindSpeed', 'Humidity', 'Visibility', 'DewPoint',
-                        'SolarRad', 'Rainfall', 'Snowfall']#, 'Rented']
+                        'SolarRad', 'Rainfall', 'Snowfall', 'Rented']
         for col in numeric_attr:
             data_to_process[col] = pd.to_numeric(data_to_process[col], errors='coerce')
 
@@ -115,10 +116,6 @@ class Dataset(torch.utils.data.Dataset):
 
         train_attr = pd.get_dummies(data_to_process, columns=categorical_attr)
         train_attr.pop('Date')
-
-        train_attr.insert(40, 'Rented Bike Count', test)
-
-        print (train_attr)
 
         return train_attr
 
@@ -140,7 +137,7 @@ def model():
 
     # Hyperparam
     BATCH_SIZE = 64
-    EPOCH = 20
+    EPOCH = 10
 
     if sys.platform == "linux" or sys.platform == "linux2":
         current_dir = os.path.dirname(__file__)
@@ -165,9 +162,6 @@ def model():
     accuracy = []
     loss_list = []
 
-    my_images = []
-    fig, ax = plt.subplots(figsize=(16,10))
-
     for epoch in range(EPOCH):
         for step, (batch_x, batch_y) in enumerate(loader): # for each training step
             b_x = torch.autograd.Variable(batch_x)
@@ -188,53 +182,8 @@ def model():
         errors = (prediction - target) ** 2  # Squared error
         acc = (errors < threshold).float().mean()
         error = errors.mean()
-        #accuracy.append(torch.Tensor.detach(acc).numpy()[0])
-        #loss_list.append(torch.Tensor.detach(error).numpy()[0])
         print (acc)
         print (error)
-
-
-'''            if step == 1:
-                # plot and show learning process
-                plt.cla()
-                ax.set_title('Regression Analysis - model 3 Batches', fontsize=35)
-                ax.set_xlabel('Independent variable', fontsize=24)
-                ax.set_ylabel('Dependent variable', fontsize=24)
-                ax.set_xlim(-11.0, 13.0)
-                ax.set_ylim(-1.1, 1.2)
-                ax.scatter(b_x.data.numpy(), b_y.data.numpy(), color = "blue", alpha=0.2)
-                ax.scatter(b_x.data.numpy(), prediction.data.numpy(), color='green', alpha=0.5)
-                ax.text(8.8, -0.8, 'Epoch = %d' % epoch,
-                        fontdict={'size': 24, 'color':  'red'})
-                ax.text(8.8, -0.95, 'Loss = %.4f' % loss.data.numpy(),
-                        fontdict={'size': 24, 'color':  'red'})
-
-                # Used to return the plot as an image array
-                # (https://ndres.me/post/matplotlib-animated-gifs-easily/)
-                fig.canvas.draw()       # draw the canvas, cache the renderer
-                image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
-                image  = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-
-                my_images.append(image)
-
-
-                # save images as a gif
-    imageio.mimsave('./curve_2_model_3_batch.gif', my_images, fps=12)
-
-
-    fig, ax = plt.subplots(figsize=(16,10))
-    plt.cla()
-    ax.set_title('Regression Analysis - model 3, Batches', fontsize=35)
-    ax.set_xlabel('Independent variable', fontsize=24)
-    ax.set_ylabel('Dependent variable', fontsize=24)
-    ax.set_xlim(-11.0, 13.0)
-    ax.set_ylim(-1.1, 1.2)
-    ax.scatter(x.data.numpy(), y.data.numpy(), color = "blue", alpha=0.2)
-    prediction = net(x)     # input x and predict based on x
-    ax.scatter(x.data.numpy(), prediction.data.numpy(), color='green', alpha=0.5)
-    plt.savefig('curve_2_model_3_batches.png')
-    plt.show()'''
-
 
     #visualiseModel(accuracy, loss)
 
