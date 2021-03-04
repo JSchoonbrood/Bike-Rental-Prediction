@@ -117,6 +117,8 @@ class Dataset(torch.utils.data.Dataset):
         train_attr = pd.get_dummies(data_to_process, columns=categorical_attr)
         train_attr.pop('Date')
 
+        print (train_attr)
+
         return train_attr
 
     def returnDF(self):
