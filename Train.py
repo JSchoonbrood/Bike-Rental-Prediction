@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 import os
 import sys
 from matplotlib import pyplot
@@ -124,20 +125,75 @@ class Dataset(torch.utils.data.Dataset):
         else:
             return self.data
 
+class FeedForwardNN(nn.Module):
+  def __init__(self, emb_dims, no_of_cont, lin_layer_sizes,
+               output_size, emb_dropout, lin_layer_dropouts):
+    super().__init__()
+
+    # Embedding layers
+    self.emb_layers = nn.ModuleList([nn.Embedding(x, y)
+                                     for x, y in emb_dims])
+
+    no_of_embs = sum([y for x, y in emb_dims])
+    self.no_of_embs = no_of_embs
+    self.no_of_cont = no_of_cont
+
+    # Linear Layers
+    first_lin_layer = nn.Linear(self.no_of_embs + self.no_of_cont,
+                                lin_layer_sizes[0])
+
+    self.lin_layers =\
+     nn.ModuleList([first_lin_layer] +\
+          [nn.Linear(lin_layer_sizes[i], lin_layer_sizes[i + 1])
+           for i in range(len(lin_layer_sizes) - 1)])
+
+    for lin_layer in self.lin_layers:
+      nn.init.kaiming_normal_(lin_layer.weight.data)
+
+    # Output Layer
+    self.output_layer = nn.Linear(lin_layer_sizes[-1],
+                                  output_size)
+    nn.init.kaiming_normal_(self.output_layer.weight.data)
+
+    # Batch Norm Layers
+    self.first_bn_layer = nn.BatchNorm1d(self.no_of_cont)
+    self.bn_layers = nn.ModuleList([nn.BatchNorm1d(size)
+                                    for size in lin_layer_sizes])
+
+    # Dropout Layers
+    self.emb_dropout_layer = nn.Dropout(emb_dropout)
+    self.droput_layers = nn.ModuleList([nn.Dropout(size)
+                                  for size in lin_layer_dropouts])
+
+  def forward(self, cont_data, cat_data):
+
+    if self.no_of_embs != 0:
+      x = [emb_layer(cat_data[:, i])
+           for i,emb_layer in enumerate(self.emb_layers)]
+      x = torch.cat(x, 1)
+      x = self.emb_dropout_layer(x)
+
+    if self.no_of_cont != 0:
+      normalized_cont_data = self.first_bn_layer(cont_data)
+
+      if self.no_of_embs != 0:
+        x = torch.cat([x, normalized_cont_data], 1)
+      else:
+        x = normalized_cont_data
+
+    for lin_layer, dropout_layer, bn_layer in\
+        zip(self.lin_layers, self.droput_layers, self.bn_layers):
+
+      x = F.relu(lin_layer(x))
+      x = bn_layer(x)
+      x = dropout_layer(x)
+
+    x = self.output_layer(x)
+
+    return x
+
+
 def model():
-    # Sequential Model
-    model = torch.nn.Sequential(
-        torch.nn.Linear(13, 64), #input = 13, hidden = 100, output = 13
-        torch.nn.LeakyReLU(),
-        torch.nn.Linear(64, 32), #input = 13, hidden = 100, output = 13
-        torch.nn.LeakyReLU(),
-        torch.nn.Linear(32, 1) #input = 13, hidden = 1, output = 1
-    )
-
-    # Hyperparam
-    BATCH_SIZE = 64
-    EPOCH = 10
-
     if sys.platform == "linux" or sys.platform == "linux2":
         current_dir = os.path.dirname(__file__)
         fname = '/SeoulBikeData.csv'
@@ -145,8 +201,24 @@ def model():
         current_dir = os.path.dirname(__file__)
         fname = '\SeoulBikeData.csv'
 
-    # Load Dataframe
     ds = Dataset(csv_file=fname, root_dir=current_dir, process=True)
+
+    categorical_attr = ['Seasons', 'Holidays', 'FuncDays', 'Hour']
+    output_attr = 'Rented'
+
+    cat_dims = [int(ds[col].nunique()) for col in categorical_attr]
+    emb_dims = [(x, min(50, (x + 1) // 2)) for x in cat_dims]
+
+    model = FeedForwardNN(emb_dims, no_of_cont=8, lin_layer_sizes=[50, 100],
+                          output_size=1, emb_dropout=0.04,
+                          lin_layer_dropouts=[0.001,0.01]).to(device)
+
+    # Hyperparam
+    BATCH_SIZE = 64
+    EPOCH = 10
+
+    # Load Dataframe
+
     loader = torch.utils.data.DataLoader(dataset=ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
 
     # Learning Rate
