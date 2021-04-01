@@ -18,9 +18,18 @@ def processData(dataframe):
     holiday = data_to_process.pop('Holiday')
     func_day = data_to_process.pop('Functioning Day')
 
-    # This section turns these attributes from strings to numerics
-    encoder = LabelEncoder()
-    encoded_dates = encoder.fit_transform(date)
+    days = []
+    months = []
+    years = []
+    for row in date:
+        date_split = row.split("/")
+        days.append(int(date_split[0]))
+        months.append(int(date_split[1]))
+        years.append(int(date_split[2]))
+
+    print(days)
+    print(months)
+    print(years)
 
     new_seasons = []
     season_type = {'Winter': 1, 'Spring': 2, 'Summer': 3, 'Autumn': 4}
@@ -42,25 +51,28 @@ def processData(dataframe):
 
     # Insertion of attributes into original dataset
     test = data_to_process.pop('Rented Bike Count')
-    data_to_process.insert(0, 'Date', encoded_dates)
-    data_to_process.insert(1, 'Seasons', new_seasons)
-    data_to_process.insert(2, 'Holidays', new_holidays)
-    data_to_process.insert(3, 'Functioning Day', new_func_days)
-    data_to_process.insert(13, 'Rented Bike Count', test)  # 13 if date incl
+    data_to_process.insert(0, 'Day', days)
+    data_to_process.insert(1, 'Month', months)
+    data_to_process.insert(2, 'Years', years)
+    data_to_process.insert(3, 'Seasons', new_seasons)
+    data_to_process.insert(4, 'Holidays', new_holidays)
+    data_to_process.insert(5, 'Functioning Day', new_func_days)
+    data_to_process.insert(15, 'Rented Bike Count', test)  # 13 if date incl
 
     # Rename columns
-    data_to_process.columns =  ['Dates', 'Seasons', 'Holidays', 'FuncDays',
-                                'Hour', 'Temp', 'WindSpeed', 'Humidity',
-                                'Visibility', 'DewPoint', 'SolarRad',
-                                'Rainfall', 'Snowfall', 'Rented']
+    data_to_process.columns =  ['Days', 'Months', 'Years', 'Seasons',
+                                'Holidays', 'FuncDays', 'Hour', 'Temp',
+                                'WindSpeed', 'Humidity', 'Visibility',
+                                'DewPoint', 'SolarRad', 'Rainfall', 'Snowfall',
+                                'Rented']
 
     # Set column types for numerical columns
     numeric_attr = ['Temp', 'WindSpeed', 'Humidity', 'Visibility', 'DewPoint',
-                    'SolarRad', 'Rainfall', 'Snowfall', 'Rented']
+                    'SolarRad', 'Rainfall', 'Snowfall', 'Rented', 'Days', 'Months', 'Years']
 
     for col in numeric_attr:
         data_to_process[col] = pd.to_numeric(data_to_process[col], errors='coerce')
-        
+
     # Set column types for original string'd columns
     categorical_attr = ['Seasons', 'Holidays', 'FuncDays', 'Hour']
     for col in categorical_attr:
@@ -85,7 +97,7 @@ def visualiseModel(history, eval):
 
 def basicModel(train_features, train_labels, val_features, val_labels):
     model1 = tf.keras.Sequential()
-    model1.add(Dense(5, input_dim=13))
+    model1.add(Dense(5, input_dim=15))
     model1.add(BatchNormalization())
 
     model1.add(Dense(64,  activation='sigmoid'))
