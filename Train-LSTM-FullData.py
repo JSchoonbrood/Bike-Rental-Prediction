@@ -88,10 +88,16 @@ def run():
 
 	values = df.values
 
-	scaler = MinMaxScaler(feature_range=(0, 1))
+	scaler = MinMaxScaler(feature_range=(0, 1)) #normalizes values between 0 and 1
 	scaled = scaler.fit_transform(values)
 
-	reframed = series_to_supervised(scaled, 1, 1)
+	reframed = series_to_supervised(scaled, 168, 1) #first 1: consider 1hr before. #second 1: how many predictions in future
 	print (reframed.head())
+
+	initial_number = 168
+	for i in range(len(reframed)):
+		modified_number = initial_number-1
+		variable_name = "var1(t-" + modified_number + ")"
+		reframed.drop(variable_name)
 
 run()
