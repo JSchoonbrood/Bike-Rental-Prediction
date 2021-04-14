@@ -4,6 +4,18 @@ import os
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime
 from pathlib import Path
+from math import sqrt
+from numpy import concatenate
+from matplotlib import pyplot
+from pandas import read_csv
+from pandas import DataFrame
+from pandas import concat
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_squared_error
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
 
 def processData(dataframe):
 	modified_dataframe = dataframe.copy()
@@ -51,7 +63,6 @@ def processData(dataframe):
 	modified_dataframe.insert(11, 'FuncDays', integer_func_day)
 
 	modified_dataframe.to_csv('modified.csv')
-	print (modified_dataframe)
 	return modified_dataframe
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
@@ -91,13 +102,35 @@ def run():
 	scaler = MinMaxScaler(feature_range=(0, 1)) #normalizes values between 0 and 1
 	scaled = scaler.fit_transform(values)
 
-	reframed = series_to_supervised(scaled, 168, 1) #first 1: consider 1hr before. #second 1: how many predictions in future
+	reframed = series_to_supervised(scaled, 48, 1) #first 1: consider 1hr before. #second 1: how many predictions in future
+	reframed.drop(reframed.columns[[-1,-2,-3,-4,-5,-6,-7, -8, -9, -10, -11]], axis=1, inplace=True)
 	print (reframed.head())
+	reframed_values = reframed.values
 
-	initial_number = 168
-	for i in range(len(reframed)):
-		modified_number = initial_number-1
-		variable_name = "var1(t-" + modified_number + ")"
-		reframed.drop(variable_name)
+	n_train_hours = 200*24
+
+	train = reframed_values[:n_train_hours, :]
+	test = reframed_values[n_train_hours:, :]
+
+	train_x, train_y = train[:, :-1], train[:, -1]
+	test_x, test_y = test[:, :-1], test[:, -1]
+
+	train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
+	test_x = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
+
+	print(train_x.shape, train_y.shape, test_x.shape, test_y.shape)
+
+	# design network
+	model = Sequential()
+	model.add(LSTM(50, input_shape=(train_x.shape[1], train_x.shape[2])))
+	model.add(Dense(1))
+	model.compile(loss='mae', optimizer='adam')
+	# fit network
+	history = model.fit(train_x, train_y, epochs=50, batch_size=72, validation_data=(test_x, test_y), verbose=2, shuffle=False)
+	# plot history
+	pyplot.plot(history.history['loss'], label='train')
+	pyplot.plot(history.history['val_loss'], label='test')
+	pyplot.legend()
+	pyplot.show()
 
 run()
