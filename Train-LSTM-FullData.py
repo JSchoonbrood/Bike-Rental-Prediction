@@ -122,11 +122,12 @@ def run():
 
 	# design network
 	model = Sequential()
-	model.add(LSTM(50, input_shape=(train_x.shape[1], train_x.shape[2])))
+	model.add(LSTM(50, input_shape=(train_x.shape[1], train_x.shape[2]), return_sequences=True))
+	model.add(LSTM(25))
 	model.add(Dense(1))
-	model.compile(loss='mae', optimizer='adam')
+	model.compile(loss='mse', optimizer='adam')
 	# fit network
-	history = model.fit(train_x, train_y, epochs=50, batch_size=72, validation_data=(test_x, test_y), verbose=2, shuffle=False)
+	history = model.fit(train_x, train_y, epochs=50, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
 	# plot history
 	pyplot.plot(history.history['loss'], label='train')
 	pyplot.plot(history.history['val_loss'], label='test')
