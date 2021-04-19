@@ -127,7 +127,7 @@ def run():
 	model.add(Dense(1))
 	model.compile(loss='mse', optimizer='adam')
 	# fit network
-	history = model.fit(train_x, train_y, epochs=50, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
+	history = model.fit(train_x, train_y, epochs=150, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
 	# plot history
 	pyplot.plot(history.history['loss'], label='train')
 	pyplot.plot(history.history['val_loss'], label='test')
@@ -136,15 +136,15 @@ def run():
 
 
 	# make a prediction
-	yhat = model.predict(test_X)
-	test_X = test_X.reshape((test_X.shape[0], test_X.shape[2]))
+	yhat = model.predict(test_x)
+	test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
 	# invert scaling for forecast
-	inv_yhat = concatenate((yhat, test_X[:, 1:]), axis=1)
+	inv_yhat = concatenate((yhat, test_x[:, -11:]), axis=1)
 	inv_yhat = scaler.inverse_transform(inv_yhat)
 	inv_yhat = inv_yhat[:,0]
 	# invert scaling for actual
 	test_y = test_y.reshape((len(test_y), 1))
-	inv_y = concatenate((test_y, test_X[:, 1:]), axis=1)
+	inv_y = concatenate((test_y, test_x[:, -11:]), axis=1)
 	inv_y = scaler.inverse_transform(inv_y)
 	inv_y = inv_y[:,0]
 	# calculate RMSE
