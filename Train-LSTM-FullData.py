@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-
+import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime
 from pathlib import Path
@@ -102,7 +102,7 @@ def run():
 	scaler = MinMaxScaler(feature_range=(0, 1)) #normalizes values between 0 and 1
 	scaled = scaler.fit_transform(values)
 
-	reframed = series_to_supervised(scaled, 48, 1) #first 1: consider 1hr before. #second 1: how many predictions in future
+	reframed = series_to_supervised(scaled, 12, 1) #first 1: consider 1hr before. #second 1: how many predictions in future
 	reframed.drop(reframed.columns[[-1,-2,-3,-4,-5,-6,-7, -8, -9, -10, -11]], axis=1, inplace=True)
 	print (reframed.head())
 	reframed_values = reframed.values
@@ -122,18 +122,21 @@ def run():
 
 	# design network
 	model = Sequential()
-	model.add(LSTM(50, input_shape=(train_x.shape[1], train_x.shape[2]), return_sequences=True))
-	model.add(LSTM(25))
+	model.add(LSTM(20, input_shape=(train_x.shape[1], train_x.shape[2]), return_sequences=True))
+	model.add(LSTM(15, return_sequences=True))
+	model.add(LSTM(10, return_sequences=True))
+	model.add(LSTM(5, return_sequences=False))
 	model.add(Dense(1))
 	model.compile(loss='mse', optimizer='adam')
 	# fit network
-	history = model.fit(train_x, train_y, epochs=150, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
+	history = model.fit(train_x, train_y, epochs=50, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
 	# plot history
 	pyplot.plot(history.history['loss'], label='train')
 	pyplot.plot(history.history['val_loss'], label='test')
 	pyplot.legend()
 	pyplot.show()
 
+	model.save('E:\Github\INNS-Assessment\Model6')
 
 	# make a prediction
 	yhat = model.predict(test_x)
