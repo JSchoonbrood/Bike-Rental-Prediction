@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 
 from sklearn.preprocessing import MinMaxScaler
@@ -158,6 +159,13 @@ def run():
 	pyplot.plot(inv_y, label='[Actual]')
 	pyplot.legend()
 	pyplot.show()
+
+	rng = np.random.RandomState(0)
+	colors = rng.rand(3912)
+	pyplot.scatter(inv_yhat, inv_y, c=colors ,alpha = 1)
+	pyplot.xlabel('Ground Truth')
+	pyplot.ylabel('Predictions')
+	pyplot.show();
 	print('Test RMSE: %.3f' % rmse)
 
 
