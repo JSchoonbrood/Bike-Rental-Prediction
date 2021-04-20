@@ -134,21 +134,30 @@ def run():
 	pyplot.legend()
 	pyplot.show()
 
+	x = []
+	x1 = []
 
 	# make a prediction
 	yhat = model.predict(test_x)
 	test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
+
 	# invert scaling for forecast
 	inv_yhat = concatenate((yhat, test_x[:, -11:]), axis=1)
 	inv_yhat = scaler.inverse_transform(inv_yhat)
 	inv_yhat = inv_yhat[:,0]
+
 	# invert scaling for actual
 	test_y = test_y.reshape((len(test_y), 1))
 	inv_y = concatenate((test_y, test_x[:, -11:]), axis=1)
 	inv_y = scaler.inverse_transform(inv_y)
 	inv_y = inv_y[:,0]
-	# calculate RMSE
+
 	rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+
+	pyplot.plot(inv_yhat, label='[Prediction]')
+	pyplot.plot(inv_y, label='[Actual]')
+	pyplot.legend()
+	pyplot.show()
 	print('Test RMSE: %.3f' % rmse)
 
 
