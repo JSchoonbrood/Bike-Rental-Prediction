@@ -89,6 +89,13 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 		agg.dropna(inplace=True)
 	return agg
 
+def get_huber_loss_fn(**huber_loss_kwargs):
+
+    def custom_huber_loss(y_true, y_pred):
+        return tf.compat.v1.losses.huber_loss(y_true, y_pred, **huber_loss_kwargs)
+
+    return custom_huber_loss
+
 def run():
 	current_dir = Path(os.path.dirname(__file__))
 	dataset_path = os.path.join(current_dir, 'SeoulBikeData.csv')
@@ -108,7 +115,7 @@ def run():
 	print (reframed.head())
 	reframed_values = reframed.values
 
-	n_train_hours = 200*24
+	n_train_hours = 340*24
 
 	train = reframed_values[:n_train_hours, :]
 	test = reframed_values[n_train_hours:, :]
@@ -123,12 +130,12 @@ def run():
 
 	# design network
 	model = Sequential()
-	model.add(LSTM(20, input_shape=(train_x.shape[1], train_x.shape[2]), return_sequences=True))
-	model.add(LSTM(15, return_sequences=True))
+	model.add(LSTM(33, input_shape=(train_x.shape[1], train_x.shape[2]), return_sequences=True))
+	model.add(LSTM(20, return_sequences=True))
 	model.add(LSTM(10, return_sequences=True))
 	model.add(LSTM(5, return_sequences=False))
-	model.add(Dense(1))
-	model.compile(loss='mse', optimizer='adam')
+	model.add(Dense(1, activation='relu'))
+	model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer='adam')
 	# fit network
 	history = model.fit(train_x, train_y, epochs=50, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
 	# plot history
@@ -137,7 +144,7 @@ def run():
 	pyplot.legend()
 	pyplot.show()
 
-	model.save('E:\Github\INNS-Assessment\Model6')
+	model.save('E:\Github\INNS-Assessment\Model9')
 
 	# make a prediction
 	yhat = model.predict(test_x)
@@ -162,12 +169,11 @@ def run():
 	pyplot.show()
 
 	rng = np.random.RandomState(0)
-	colors = rng.rand(3912)
+	colors = rng.rand(len(inv_yhat))
 	pyplot.scatter(inv_yhat, inv_y, c=colors ,alpha = 1)
 	pyplot.xlabel('Ground Truth')
 	pyplot.ylabel('Predictions')
 	pyplot.show();
 	print('Test RMSE: %.3f' % rmse)
-
 
 run()
