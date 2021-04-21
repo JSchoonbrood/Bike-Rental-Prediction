@@ -14,9 +14,15 @@ from pandas import concat
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error
+import keras
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
+from keras.layers import Activation
+from keras import backend as K
+from keras.utils.generic_utils import get_custom_objects
+from keras.models import load_model
+from keras.callbacks import ModelCheckpoint
 
 def processData(dataframe):
 	modified_dataframe = dataframe.copy()
@@ -90,11 +96,18 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 	return agg
 
 def get_huber_loss_fn(**huber_loss_kwargs):
+	def custom_huber_loss(y_true, y_pred):
+		return tf.compat.v1.losses.huber_loss(y_true, y_pred, **huber_loss_kwargs)
+	return custom_huber_loss
 
-    def custom_huber_loss(y_true, y_pred):
-        return tf.compat.v1.losses.huber_loss(y_true, y_pred, **huber_loss_kwargs)
+def modified_sigmoid(x):
+	return (K.sigmoid(x)-0.1)
 
-    return custom_huber_loss
+class haltCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        if(logs.get('val_loss') <= 0.001):
+            print("\n\n\nReached 0.05 loss value so cancelling training!\n\n\n")
+            self.model.stop_training = True
 
 def run():
 	current_dir = Path(os.path.dirname(__file__))
@@ -115,7 +128,7 @@ def run():
 	print (reframed.head())
 	reframed_values = reframed.values
 
-	n_train_hours = 340*24
+	n_train_hours = 300*24
 
 	train = reframed_values[:n_train_hours, :]
 	test = reframed_values[n_train_hours:, :]
@@ -127,27 +140,33 @@ def run():
 	test_x = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
 
 	print(train_x.shape, train_y.shape, test_x.shape, test_y.shape)
-
+	get_custom_objects().update({'ModifiedSigmoid': Activation(modified_sigmoid)})
+	trainingStopCallback = haltCallback()
+	trainingStopCallback2 = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=0, mode='min', baseline=None)
+	mc = ModelCheckpoint('best_model.h5', monitor='val_loss', mode='min', save_best_only=True)
 	# design network
 	model = Sequential()
 	model.add(LSTM(33, input_shape=(train_x.shape[1], train_x.shape[2]), return_sequences=True))
 	model.add(LSTM(20, return_sequences=True))
 	model.add(LSTM(10, return_sequences=True))
 	model.add(LSTM(5, return_sequences=False))
-	model.add(Dense(1, activation='relu'))
+	model.add(Dense(1))
+	model.add(Activation(modified_sigmoid, name='ModifiedSigmoid'))
 	model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer='adam')
-	# fit network
-	history = model.fit(train_x, train_y, epochs=50, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False)
-	# plot history
-	pyplot.plot(history.history['loss'], label='train')
-	pyplot.plot(history.history['val_loss'], label='test')
-	pyplot.legend()
-	pyplot.show()
 
-	model.save('E:\Github\INNS-Assessment\Model9')
+	history = model.fit(train_x, train_y, epochs=1000, batch_size=25, validation_data=(test_x, test_y), verbose=2, shuffle=False, callbacks=[trainingStopCallback2, mc])
+
+	#pyplot.plot(history.history['loss'], label='train')
+	#pyplot.plot(history.history['val_loss'], label='test')
+	#pyplot.legend()
+	#pyplot.show()
+
+	model.save('E:\Github\INNS-Assessment\Model')
+
+	saved_model = load_model('best_model.h5', custom_objects={'custom_huber_loss':get_huber_loss_fn(delta=0.1), 'modified_sigmoid':Activation(modified_sigmoid)})
 
 	# make a prediction
-	yhat = model.predict(test_x)
+	yhat = saved_model.predict(test_x)
 	test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
 
 	# invert scaling for forecast
