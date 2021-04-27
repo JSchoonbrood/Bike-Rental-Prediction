@@ -14,6 +14,7 @@ from pandas import concat
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 import keras
 from keras.models import Sequential
 from keras.layers import Dense
@@ -155,7 +156,7 @@ def run():
 	opt = tf.keras.optimizers.Adam(learning_rate=0.001)
 	model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer=opt)
 
-	history = model.fit(train_x, train_y, epochs=1000, batch_size=25, validation_data=(test_x, test_y), verbose=2, shuffle=False, callbacks=[trainingStopCallback2, mc])
+	history = model.fit(train_x, train_y, epochs=1000, batch_size=30, validation_data=(test_x, test_y), verbose=2, shuffle=False, callbacks=[trainingStopCallback2, mc])
 
 	#pyplot.plot(history.history['loss'], label='train')
 	#pyplot.plot(history.history['val_loss'], label='test')
@@ -181,6 +182,8 @@ def run():
 	inv_y = scaler.inverse_transform(inv_y)
 	inv_y = inv_y[:,0]
 
+	mse = mean_squared_error(inv_y, inv_yhat)
+	mae = mean_absolute_error(inv_y, inv_yhat)
 	rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
 
 	pyplot.plot(inv_yhat, label='[Prediction]')
@@ -195,5 +198,7 @@ def run():
 	pyplot.ylabel('Predictions')
 	pyplot.show();
 	print('Test RMSE: %.3f' % rmse)
+	print('Test MSE: %.3f' % mse)
+	print('Test MAE: %.3f' % mae)
 
 run()
