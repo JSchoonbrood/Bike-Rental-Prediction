@@ -114,9 +114,9 @@ def run():
 	dataset_path = os.path.join(current_dir, 'SeoulBikeData.csv')
 
 	dataframe = pd.read_csv(dataset_path)
-
+	print(dataframe)
 	df = processData(dataframe)
-	print (df)
+	print(df)
 
 	values = df.values
 
@@ -142,7 +142,7 @@ def run():
 	print(train_x.shape, train_y.shape, test_x.shape, test_y.shape)
 	get_custom_objects().update({'ModifiedSigmoid': Activation(modified_sigmoid)})
 	trainingStopCallback = haltCallback()
-	trainingStopCallback2 = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=0, mode='min', baseline=None)
+	trainingStopCallback2 = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=0, mode='min', baseline=None)
 	mc = ModelCheckpoint('best_model.h5', monitor='val_loss', mode='min', save_best_only=True)
 	# design network
 	model = Sequential()
@@ -152,7 +152,8 @@ def run():
 	model.add(LSTM(5, return_sequences=False))
 	model.add(Dense(1))
 	model.add(Activation(modified_sigmoid, name='ModifiedSigmoid'))
-	model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer='adam')
+	opt = tf.keras.optimizers.Adam(learning_rate=0.001)
+	model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer=opt)
 
 	history = model.fit(train_x, train_y, epochs=1000, batch_size=25, validation_data=(test_x, test_y), verbose=2, shuffle=False, callbacks=[trainingStopCallback2, mc])
 
