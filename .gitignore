@@ -12,3 +12,9 @@ Model6
 162RMSE.png
 171RMSE_SIGMOID.h5
 171RMSE_SIGMOID.png
+156RMSE_80-20_CORR.h5
+156RMSE_80-20_CORR.png
+162RMSE_CORR.h5
+best_model.h5
+CorrelationMatrix.png
+FinalOutliers.png
