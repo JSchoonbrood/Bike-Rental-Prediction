@@ -72,5 +72,15 @@ def process_data(dataframe, drop_columns=[]):
                 print("An error has occured, column name", column, "is not valid")
 
     modified_dataframe.to_csv('modified.csv')
-
+    
+    # df_corr = modified_dataframe.corr()
+    #f = pyplot.figure(figsize=(19, 15))
+    #pyplot.matshow(df_corr, fignum=f.number)
+    #pyplot.xticks(range(modified_dataframe.select_dtypes(['number']).shape[1]), modified_dataframe.select_dtypes(['number']).columns, fontsize=14, rotation=45)
+    #pyplot.yticks(range(modified_dataframe.select_dtypes(['number']).shape[1]), modified_dataframe.select_dtypes(['number']).columns, fontsize=14)
+    #cb = pyplot.colorbar()
+    # cb.ax.tick_params(labelsize=14)
+    #pyplot.title('Correlation Matrix', fontsize=16);
+    # pyplot.show()
+    
     return modified_dataframe
