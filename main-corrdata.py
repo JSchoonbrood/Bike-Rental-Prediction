@@ -4,10 +4,8 @@ from math import sqrt
 import os
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 import keras
-from keras import backend as K
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Activation
@@ -26,6 +24,7 @@ from scripts.process_df import process_data
 from scripts.supervised_df import series_to_supervised
 from scripts.huberloss import get_huber_loss_fn
 from scripts.sigmoidcurve import modified_sigmoid
+from scripts.dynamic_lr import LearningRateReducerCb
 from scripts.callback import HaltCallback
 
 def run():
@@ -34,7 +33,7 @@ def run():
     current_dir = Path(os.path.dirname(__file__))
     dataset_path = os.path.join(current_dir, 'SeoulBikeData.csv')
     dataframe = pd.read_csv(dataset_path)
-    processed_df = process_data(dataframe)
+    processed_df = process_data(dataframe, ['DewPointTemp'])
     values = processed_df.values
 
     # Normalizes values between 0 and 1
@@ -55,13 +54,13 @@ def run():
     test_x, test_y = test[:, :-1], test[:, -1]
     train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
     test_x = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
-    
+
     # Define modified sigmoid
     get_custom_objects().update(
         {'ModifiedSigmoid': Activation(modified_sigmoid)})
     
     # Add training stops
-    # training_stop_callback = HaltCallback()
+    training_stop_callback = HaltCallback()
     training_stop_callback2 = keras.callbacks.EarlyStopping(
         monitor='val_loss', min_delta=0, patience=50, verbose=0, mode='min', baseline=None)
     
@@ -78,12 +77,11 @@ def run():
     model.add(LSTM(5, return_sequences=False))
     model.add(Dense(1))
     model.add(Activation(modified_sigmoid, name='ModifiedSigmoid'))
-    opt = tf.keras.optimizers.Adam(learning_rate=0.001)
-    model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer=opt)
+    model.compile(loss=get_huber_loss_fn(delta=0.1), optimizer='adam')
 
     # Track training history
     history = model.fit(train_x, train_y, epochs=1000, batch_size=30, validation_data=(
-        test_x, test_y), verbose=2, shuffle=False, callbacks=[training_stop_callback2, mc])
+        test_x, test_y), verbose=2, shuffle=False, callbacks=[LearningRateReducerCb(), training_stop_callback2, mc])
 
     pyplot.plot(history.history['loss'], label='train')
     pyplot.plot(history.history['val_loss'], label='test')
@@ -101,13 +99,13 @@ def run():
     test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
 
     # Invert scaling for forecast
-    inv_yhat = np.concatenate((yhat, test_x[:, -11:]), axis=1)
+    inv_yhat = np.concatenate((yhat, test_x[:, -10:]), axis=1)
     inv_yhat = scaler.inverse_transform(inv_yhat)
     inv_yhat = inv_yhat[:, 0]
 
     # Invert scaling for actual
     test_y = test_y.reshape((len(test_y), 1))
-    inv_y = np.concatenate((test_y, test_x[:, -11:]), axis=1)
+    inv_y = np.concatenate((test_y, test_x[:, -10:]), axis=1)
     inv_y = scaler.inverse_transform(inv_y)
     inv_y = inv_y[:, 0]
    
@@ -133,5 +131,6 @@ def run():
     print('Test RMSE: %.3f' % rmse)
     print('Test MSE: %.3f' % mse)
     print('Test MAE: %.3f' % mae)
+
 
 run()
