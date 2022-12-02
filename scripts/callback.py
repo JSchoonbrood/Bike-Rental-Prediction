@@ -2,6 +2,7 @@
 
 import tensorflow as tf
 
+
 class HaltCallback(tf.keras.callbacks.Callback):
     """A class to automatically halt training when val_loss has reached a specific criteria.
 

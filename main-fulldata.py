@@ -28,11 +28,12 @@ from scripts.huberloss import get_huber_loss_fn
 from scripts.sigmoidcurve import modified_sigmoid
 from scripts.callback import HaltCallback
 
+
 def run():
     """Run function, handles everything in correct order and executes training model.
     """
     current_dir = Path(os.path.dirname(__file__))
-    dataset_path = os.path.join(current_dir, 'SeoulBikeData.csv')
+    dataset_path = os.path.join(current_dir, 'results/SeoulBikeData.csv')
     dataframe = pd.read_csv(dataset_path)
     processed_df = process_data(dataframe)
     values = processed_df.values
@@ -55,20 +56,20 @@ def run():
     test_x, test_y = test[:, :-1], test[:, -1]
     train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
     test_x = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
-    
+
     # Define modified sigmoid
     get_custom_objects().update(
         {'ModifiedSigmoid': Activation(modified_sigmoid)})
-    
+
     # Add training stops
     # training_stop_callback = HaltCallback()
     training_stop_callback2 = keras.callbacks.EarlyStopping(
         monitor='val_loss', min_delta=0, patience=50, verbose=0, mode='min', baseline=None)
-    
+
     # Add model checkpoint for best model based on lowest val_loss
     mc = ModelCheckpoint('best_model.h5', monitor='val_loss',
                          mode='min', save_best_only=True)
-    
+
     # Design LSTM Network
     model = Sequential()
     model.add(LSTM(33, input_shape=(
@@ -110,7 +111,7 @@ def run():
     inv_y = np.concatenate((test_y, test_x[:, -11:]), axis=1)
     inv_y = scaler.inverse_transform(inv_y)
     inv_y = inv_y[:, 0]
-   
+
     # Calculate errors
     mse = mean_squared_error(inv_y, inv_yhat)
     mae = mean_absolute_error(inv_y, inv_yhat)
@@ -121,17 +122,18 @@ def run():
     pyplot.plot(inv_y, label='[Actual]')
     pyplot.legend()
     pyplot.show()
-   
+
     rng = np.random.RandomState(0)
     colors = rng.rand(len(inv_yhat))
     pyplot.scatter(inv_yhat, inv_y, c=colors, alpha=1)
     pyplot.xlabel('Ground Truth')
     pyplot.ylabel('Predictions')
     pyplot.show()
-   
+
     # Display Errors
     print('Test RMSE: %.3f' % rmse)
     print('Test MSE: %.3f' % mse)
     print('Test MAE: %.3f' % mae)
+
 
 run()

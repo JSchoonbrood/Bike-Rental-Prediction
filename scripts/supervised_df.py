@@ -3,6 +3,7 @@
 
 import pandas as pd
 
+
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     """Convert timeseries dataframe to supervised
     Args:

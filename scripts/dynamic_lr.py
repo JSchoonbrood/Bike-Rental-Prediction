@@ -2,12 +2,14 @@
 
 import tensorflow as tf
 
+
 class LearningRateReducerCb(tf.keras.callbacks.Callback):
     """A class to handle learning rate adjustments
 
     Args:
         tf (_type_): Inherits tensorflow callback
     """
+
     def on_epoch_end(self, epoch):
         """Adjusts learning rate dynamically
 
@@ -20,4 +22,3 @@ class LearningRateReducerCb(tf.keras.callbacks.Callback):
         print("\nEpoch: {}. Reducing Learning Rate from {} to {}".format(
             epoch, old_lr, new_lr))
         self.model.optimizer.lr.assign(new_lr)
-        

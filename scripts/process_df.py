@@ -3,6 +3,7 @@
 
 from datetime import datetime
 
+
 def process_data(dataframe, drop_columns=[]):
     """Process data to a useable format.
 
@@ -63,16 +64,17 @@ def process_data(dataframe, drop_columns=[]):
         new_day = func_day_type[str(row)]
         integer_func_day.append(new_day)
     modified_dataframe.insert(11, 'FuncDays', integer_func_day)
-    
+
     if len(drop_columns) > 0:
         for column in drop_columns:
             try:
                 modified_dataframe.pop(column)
             except KeyError:
-                print("An error has occured, column name", column, "is not valid")
+                print("An error has occured, column name",
+                      column, "is not valid")
 
     modified_dataframe.to_csv('modified.csv')
-    
+
     # df_corr = modified_dataframe.corr()
     #f = pyplot.figure(figsize=(19, 15))
     #pyplot.matshow(df_corr, fignum=f.number)
@@ -82,5 +84,5 @@ def process_data(dataframe, drop_columns=[]):
     # cb.ax.tick_params(labelsize=14)
     #pyplot.title('Correlation Matrix', fontsize=16);
     # pyplot.show()
-    
+
     return modified_dataframe

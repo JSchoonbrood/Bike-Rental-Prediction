@@ -2,6 +2,7 @@
 
 from keras import backend as K
 
+
 def modified_sigmoid(x):
     """Returns a modified sigmoid curve
 
